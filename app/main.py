@@ -1,19 +1,16 @@
-# código fast api app
-
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI(
     title="DashFlow API",
-    description="API para relatórios automatizados de marketing com IA",
+    description="API para relatórios automatizados de marketing",
     version="0.1.0"
 )
 
-# cors ( para o frontend )
-
+# CORS 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8001"],  # front local
+    allow_origins=["http://localhost:8501"],  # Streamlit
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -22,7 +19,7 @@ app.add_middleware(
 @app.get("/")
 def read_root():
     return {
-        "message": "DashFlow API está rodando! Uhul!",
+        "message": "DashFlow API está rodando! 🚀",
         "version": "0.1.0",
         "docs": "/docs"
     }
@@ -31,18 +28,16 @@ def read_root():
 def health_check():
     return {"status": "healthy"}
 
-# importar routers aqui depois
+# Importar routers
+from app.routers import auth, client
 
-from app.routers import auth
-
-# incluir routers
-
+# Incluir routers
 app.include_router(auth.router, prefix="/auth", tags=["Autenticação"])
+app.include_router(client.router, prefix="/clients", tags=["Clientes"])
 
-# tabela nos bancos
-
+# Criar tabelas no banco
 from app.database import engine, Base
-from app.models import user # importa todos os models
+from app.models import user, client as client_model
 
 @app.on_event("startup")
 def startup_event():

@@ -2,22 +2,24 @@ import streamlit as st
 import requests
 from datetime import datetime
 
+# Configuração da página
 st.set_page_config(
-    page_title="Home - DashFlow",
+    page_title="DashFlow",
     page_icon="📊",
     layout="wide",
     initial_sidebar_state="expanded"
 )
 
+# URL da API
 API_URL = "http://localhost:8000"
 
+# Inicializar session state
 if 'token' not in st.session_state:
     st.session_state.token = None
 if 'user' not in st.session_state:
     st.session_state.user = None
 
-# função login
-
+# Função de login
 def login(email, password):
     try:
         response = requests.post(
@@ -32,9 +34,8 @@ def login(email, password):
             return False, "Email ou senha incorretos"
     except Exception as e:
         return False, f"Erro ao conectar: {str(e)}"
-    
-# função de registro
 
+# Função de registro
 def register(email, name, password):
     try:
         response = requests.post(
@@ -42,13 +43,14 @@ def register(email, name, password):
             json={"email": email, "name": name, "password": password}
         )
         if response.status_code == 201:
-            return True, "Cadastro realizado! Faça seu login."
+            return True, "Cadastro realizado! Faça login."
         else:
             error = response.json().get("detail", "Erro desconhecido")
             return False, error
     except Exception as e:
         return False, f"Erro ao conectar: {str(e)}"
-    
+
+# Função para pegar dados do usuário
 def get_user_data(token):
     try:
         response = requests.get(
@@ -60,7 +62,8 @@ def get_user_data(token):
         return None
     except:
         return None
-    
+
+# CSS customizado
 st.markdown("""
     <style>
     .big-font {
@@ -78,39 +81,39 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# sidebar login/register
-
+# SIDEBAR - LOGIN/REGISTRO
 with st.sidebar:
     st.image("https://via.placeholder.com/200x80/1f77b4/FFFFFF?text=DashFlow", width=200)
     st.markdown("---")
-
+    
     if st.session_state.token is None:
+        # Tabs de Login e Registro
         tab1, tab2 = st.tabs(["🔐 Login", "📝 Cadastro"])
-
+        
         with tab1:
             st.subheader("Login")
             email = st.text_input("Email", key="login_email")
             password = st.text_input("Password", type="password", key="login_password")
-
-            if st.button("Login", use_container_width=True):
+            
+            if st.button("Entrar", use_container_width=True):
                 if email and password:
                     with st.spinner("Entrando..."):
-                        sucess, message = login(email, password)
-                        if sucess:
+                        success, message = login(email, password)
+                        if success:
                             st.success(message)
                             st.rerun()
                         else:
                             st.error(message)
                 else:
-                    st.warning("Por favor, preencha todos os campos.")
-                    
+                    st.warning("Preencha todos os campos")
+        
         with tab2:
             st.subheader("Cadastro")
             reg_email = st.text_input("Email", key="reg_email")
             reg_name = st.text_input("Nome", key="reg_name")
-            reg_password = st.text_input("Password", type="password", key="reg_password")
-
-            if st.button("Cadastrar", use_container_width=True):
+            reg_password = st.text_input("Senha", type="password", key="reg_password")
+            
+            if st.button("Criar conta", use_container_width=True):
                 if reg_email and reg_name and reg_password:
                     with st.spinner("Criando conta..."):
                         success, message = register(reg_email, reg_name, reg_password)
@@ -119,27 +122,29 @@ with st.sidebar:
                         else:
                             st.error(message)
                 else:
-                    st.warning("Por favor, preencha todos os campos!")
-
+                    st.warning("Preencha todos os campos")
+    
     else:
-        #usuario logado
+        # Usuário logado
         if st.session_state.user is None:
             st.session_state.user = get_user_data(st.session_state.token)
+        
         if st.session_state.user:
             st.success("✅ Logado")
             st.write(f"**{st.session_state.user['name']}**")
             st.caption(st.session_state.user['email'])
-
+            
             st.markdown("---")
-
+            
             if st.button("🚪 Sair", use_container_width=True):
                 st.session_state.token = None
                 st.session_state.user = None
                 st.rerun()
 
+# CONTEÚDO PRINCIPAL
 if st.session_state.token is None:
-    #landingpage nao logada
-    st.markdown('<p class="big-font"> 📊 DashFlow </p>', unsafe_allow_html=True)
+    # Landing page (não logado)
+    st.markdown('<p class="big-font">📊 DashFlow</p>', unsafe_allow_html=True)
     st.markdown("### Relatórios automatizados de marketing digital com IA")
     
     col1, col2, col3 = st.columns(3)
@@ -168,11 +173,19 @@ else:
     # Dashboard (logado)
     st.title(f"Bem-vindo, {st.session_state.user['name']}! 👋")
     
-    # Métricas placeholder
+    # Buscar clientes
+    headers = {"Authorization": f"Bearer {st.session_state.token}"}
+    try:
+        clients_response = requests.get(f"{API_URL}/clients/", headers=headers)
+        num_clients = len(clients_response.json()) if clients_response.status_code == 200 else 0
+    except:
+        num_clients = 0
+    
+    # Métricas
     col1, col2, col3, col4 = st.columns(4)
     
     with col1:
-        st.metric("Clientes", "0", "Nenhum ainda")
+        st.metric("Clientes", num_clients, "Cadastrados")
     
     with col2:
         st.metric("Campanhas", "0", "Adicione integrações")
@@ -185,26 +198,35 @@ else:
     
     st.markdown("---")
     
-    # Próximos passos
-    st.subheader("🚀 Próximos passos")
+    # Ações rápidas
+    st.subheader("🚀 Ações Rápidas")
     
     col1, col2 = st.columns(2)
     
     with col1:
         with st.container():
-            st.markdown("#### 1. Conectar Google Ads")
-            st.markdown("Conecte sua conta do Google Ads para importar campanhas")
-            if st.button("Conectar Google Ads", key="google_ads"):
-                st.info("🚧 Em desenvolvimento")
+            st.markdown("#### 📋 Gerenciar Clientes")
+            st.markdown(f"Você tem **{num_clients} cliente(s)** cadastrado(s)")
+            if st.button("Ver clientes", key="go_clients"):
+                st.switch_page("pages/1_👥_Clientes.py")
     
     with col2:
         with st.container():
-            st.markdown("#### 2. Conectar Meta Ads")
-            st.markdown("Conecte sua conta do Meta (Facebook/Instagram)")
-            if st.button("Conectar Meta Ads", key="meta_ads"):
+            st.markdown("#### 🔗 Conectar Integrações")
+            st.markdown("Conecte suas contas de anúncios")
+            if st.button("Configurar integrações", key="integrations"):
                 st.info("🚧 Em desenvolvimento")
     
     st.markdown("---")
+    
+    # Próximos passos
+    st.subheader("🎯 Próximos Passos")
+    
+    if num_clients == 0:
+        st.info("👉 Comece adicionando seus clientes na página **Clientes**")
+    else:
+        st.success("✅ Você já tem clientes cadastrados!")
+        st.info("👉 Próximo passo: Conectar Google Ads e Meta Ads (em breve)")
     
     # Info do usuário
     with st.expander("ℹ️ Informações da conta"):

@@ -14,8 +14,9 @@ class User(Base):
     created_at = Column(DateTime, default=datetime.utcnow)
     updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
-    # relacionamentos (adicionar depois)
-    # clients = relationship("Client", back_populates="user")
+    # relacionamentos
+
+    clients = relationship("Client", back_populates="user", cascade="all, delete-orphan")
 
     def __repr__(self):
         return f"<User {self.email}>"
