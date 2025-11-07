@@ -9,6 +9,7 @@ router = APIRouter()
 
 @router.post("/register", response_model=UserResponse, status_code=status.HTTP_201_CREATED)
 def register(user_data: UserCreate, db: Session = Depends(get_db)):
+    print(">>> DADOS RECEBIDOS:", user_data)
     """registra novo usuário"""
     
     # verifica se email já existe

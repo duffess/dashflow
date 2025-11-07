@@ -10,11 +10,16 @@ app = FastAPI(
 # CORS 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:8501"],  # Streamlit
+    allow_origins=[
+        "http://localhost:8501",  # Streamlit
+        "http://localhost:3000",  # React
+        "http://localhost:5173",  # Vite
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
 
 @app.get("/")
 def read_root():

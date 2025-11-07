@@ -1,0 +1,93 @@
+import React, { createContext, useContext, useState, useEffect } from 'react';
+import api from '../lib/api';
+
+const AuthContext = createContext();
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within AuthProvider');
+  }
+  return context;
+};
+
+export const AuthProvider = ({ children }) => {
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    const token = localStorage.getItem('dashflow_token');
+    if (token) {
+      api.get('/auth/me')
+        .then(res => setUser(res.data))
+        .catch(() => {
+          localStorage.removeItem('dashflow_token');
+        })
+        .finally(() => setLoading(false));
+    } else {
+      setLoading(false);
+    }
+  }, []);
+
+  const login = async (email, password) => {
+    try {
+      const { data } = await api.post('/auth/login', { email, password });
+      localStorage.setItem('dashflow_token', data.access_token);
+      
+      // Buscar dados do usuário após login
+      const userRes = await api.get('/auth/me');
+      setUser(userRes.data);
+      
+      return { success: true };
+    } catch (error) {
+      return { 
+        success: false, 
+        error: error.response?.data?.detail || 'Email ou senha incorretos' 
+      };
+    }
+  };
+
+ const register = async (name, email, password) => {
+  const payload = { name, email, password };
+  console.log('Enviando payload:', payload);
+
+  try {
+    const res = await api.post('/auth/register', payload, {
+      headers: { 'Content-Type': 'application/json' },
+    });
+    console.log('Resposta backend:', res.data);
+
+    return { success: true };
+  } catch (error) {
+    console.error('Erro backend:', error.response?.data);
+    return {
+      success: false,
+      error: error.response?.data?.detail || 'Erro ao criar conta',
+    };
+  }
+};
+
+
+
+  const logout = () => {
+    setUser(null);
+    localStorage.removeItem('dashflow_token');
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
+          <p className="text-slate-600">Carregando...</p>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <AuthContext.Provider value={{ user, login, register, logout }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
