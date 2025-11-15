@@ -1,5 +1,6 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from app.routers import auth, client, google_oauth
 
 app = FastAPI(
     title="DashFlow API",
@@ -47,3 +48,5 @@ from app.models import user, client as client_model
 @app.on_event("startup")
 def startup_event():
     Base.metadata.create_all(bind=engine)
+
+app.include_router(google_oauth.router, prefix="/auth/google", tags=["Google OAuth"])
